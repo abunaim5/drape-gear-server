@@ -30,7 +30,32 @@ async function run() {
         // find all product related api
         app.get('/products', async (req, res) => {
             try {
-                const products = await productCollection.find().toArray();
+
+                // query and options
+                let query = {};
+
+                let options = {
+                    sort: {}
+                };
+
+                // sort related queries
+                const sortPriceVal = req.query.sort;
+                console.log(sortPriceVal)
+                switch (sortPriceVal) {
+                    case 'default':
+                        options.sort = { createdAt: -1 };
+                        break;
+                    case 'low':
+                        options.sort.price = 1;
+                        break;
+                    case 'high':
+                        options.sort.price = -1;
+                        break;
+                    default:
+                        options.sort = { createdAt: -1 };
+                };
+
+                const products = await productCollection.find(query, options).toArray();
                 res.status(200).json({ success: true, products });
             } catch (error) {
                 res.status().json({ success: false, message: 'failed to fetch products' });
