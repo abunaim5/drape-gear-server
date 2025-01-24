@@ -38,6 +38,12 @@ async function run() {
                     sort: {}
                 };
 
+                // filter related queries
+                const collection = req.query.filter;
+                if (collection !== 'all') {
+                    query.collection = collection;
+                };
+
                 // sort related queries
                 const sortPriceVal = req.query.sort;
                 console.log(sortPriceVal)
