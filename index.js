@@ -30,13 +30,17 @@ async function run() {
         // find all product related api
         app.get('/products', async (req, res) => {
             try {
+                // pagination related queries
+                const page = parseInt(req.query.page);
                 const size = parseInt(req.query.size);
+                let skip = (page * size) - size;
 
                 // query and options
                 let query = {};
 
                 let options = {
                     limit: size,
+                    skip: skip,
                     sort: {}
                 };
 
@@ -48,7 +52,6 @@ async function run() {
 
                 // sort related queries
                 const sortPriceVal = req.query.sort;
-                console.log(sortPriceVal)
                 switch (sortPriceVal) {
                     case 'default':
                         options.sort = { createdAt: -1 };
