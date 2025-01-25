@@ -30,11 +30,13 @@ async function run() {
         // find all product related api
         app.get('/products', async (req, res) => {
             try {
+                const size = parseInt(req.query.size);
 
                 // query and options
                 let query = {};
 
                 let options = {
+                    limit: size,
                     sort: {}
                 };
 
@@ -63,8 +65,33 @@ async function run() {
 
                 const products = await productCollection.find(query, options).toArray();
                 res.status(200).json({ success: true, products });
-            } catch (error) {
+            } catch (err) {
                 res.status().json({ success: false, message: 'failed to fetch products' });
+            }
+        });
+
+        // find total product count related api
+        app.get('/productCount', async (req, res) => {
+            try {
+                let query = {}
+
+                const searchText = req.query.search;
+                if (searchText) {
+                    query.name = {
+                        $regex: searchText,
+                        $options: 'i'
+                    }
+                };
+
+                const collection = req.query.filter;
+                if (collection && collection !== 'all') {
+                    query.collection = collection;
+                }
+
+                const count = await productCollection.countDocuments(query);
+                res.status(200).json({success: true, count});
+            } catch (err) {
+                res.status().json({ success: false, message: 'failed to fetch product count' });
             }
         });
 
