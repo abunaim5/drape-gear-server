@@ -73,6 +73,26 @@ async function run() {
             }
         });
 
+        // find products with searching related api
+        app.get('/searchProducts', async (req, res) => {
+            try {
+                const searchText = req.query.search;
+
+                const query = {
+                    name: {
+                        $regex: searchText,
+                        $options: 'i'
+                    }
+                };
+
+                const searchResult = await productCollection.find(query).toArray();
+                res.status(200).json({ success: true, searchResult });
+            } catch (err) {
+                res.status().json({ success: false, message: 'failed to fetch search products' });
+            }
+        });
+
+
         // find total product count related api
         app.get('/productCount', async (req, res) => {
             try {
@@ -92,7 +112,7 @@ async function run() {
                 }
 
                 const count = await productCollection.countDocuments(query);
-                res.status(200).json({success: true, count});
+                res.status(200).json({ success: true, count });
             } catch (err) {
                 res.status().json({ success: false, message: 'failed to fetch product count' });
             }
