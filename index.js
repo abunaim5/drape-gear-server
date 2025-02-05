@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -73,6 +73,26 @@ async function run() {
             }
         });
 
+        // find wishlist products
+        app.post('/wishlist', async (req, res) => {
+            try {
+                const { wishlist } = req.body;
+                if (!wishlist || !Array.isArray(wishlist)) {
+                    return res.status(400).json({ message: 'Invalid wishlist data' });
+                }
+                const wishlistIds = wishlist.map(id => new ObjectId(id));
+                const query = {
+                    _id: {
+                        $in: wishlistIds
+                    }
+                }
+                const products = await productCollection.find(query).toArray();
+                return res.status(200).json({ success: true, products });
+            } catch (err) {
+                return res.status(500).json({ success: false, message: 'failed to fetch wishlist products' });
+            }
+        });
+
         // find products with searching related api
         app.get('/searchProducts', async (req, res) => {
             try {
@@ -91,7 +111,6 @@ async function run() {
                 res.status().json({ success: false, message: 'failed to fetch search products' });
             }
         });
-
 
         // find total product count related api
         app.get('/productCount', async (req, res) => {
