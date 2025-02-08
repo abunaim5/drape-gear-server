@@ -26,6 +26,7 @@ async function run() {
         await client.connect();
 
         const productCollection = client.db('drapeGearDB').collection('products');
+        const userCollection = client.db('drapeGearDB').collection('users');
 
         // find all product related api
         app.get('/products', async (req, res) => {
@@ -70,6 +71,17 @@ async function run() {
                 res.status(200).json({ success: true, products });
             } catch (err) {
                 res.status().json({ success: false, message: 'failed to fetch products' });
+            }
+        });
+
+        // find user related api
+        app.get('/user', async (req, res) => {
+            try {
+                const { userInfo } = req.body;
+                const user = await userCollection.findOne(userInfo);
+                return res.status(200).json({ success: true, user });
+            } catch (err) {
+                return res.status(500).json({ success: false, message: 'failed to fetch user' });
             }
         });
 
