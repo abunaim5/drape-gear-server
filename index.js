@@ -1,5 +1,6 @@
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
+const bcrypt = require('bcryptjs');
 const express = require('express');
 const cors = require('cors');
 const app = express();
@@ -26,7 +27,46 @@ async function run() {
         await client.connect();
 
         const productCollection = client.db('drapeGearDB').collection('products');
-        const userCollection = client.db('drapeGearDB').collection('users');
+        const usersCollection = client.db('drapeGearDB').collection('users');
+
+        // create user related api
+        app.post('/register', async (req, res) => {
+            try {
+                const { name, email, password, role } = req.body;
+                // check if user already exists
+                const existingUser = await usersCollection.findOne({ email });
+                if (existingUser) {
+                    return res.status(400).json({ message: 'User already exists' });
+                }
+
+                // hash password
+                const hashPassword = await bcrypt.hash(password, 10);
+
+                // create new user
+                const newUser = {
+                    name,
+                    email,
+                    password: hashPassword,
+                    role,
+                    createdAt: new Date()
+                };
+                await usersCollection.insertOne(newUser);
+                res.status(201).json({ message: 'User registered successfully!' });
+            } catch (err) {
+                res.status(500).json({ message: 'Something went wrong', err });
+            }
+        });
+
+        // find user related api
+        app.post('/user', async (req, res) => {
+            try {
+                const { userInfo } = req.body;
+                const user = await usersCollection.findOne(userInfo);
+                return res.status(200).json({ success: true, user });
+            } catch (err) {
+                return res.status(500).json({ success: false, message: 'failed to fetch user' });
+            }
+        });
 
         // find all product related api
         app.get('/products', async (req, res) => {
@@ -71,17 +111,6 @@ async function run() {
                 res.status(200).json({ success: true, products });
             } catch (err) {
                 res.status().json({ success: false, message: 'failed to fetch products' });
-            }
-        });
-
-        // find user related api
-        app.get('/user', async (req, res) => {
-            try {
-                const { userInfo } = req.body;
-                const user = await userCollection.findOne(userInfo);
-                return res.status(200).json({ success: true, user });
-            } catch (err) {
-                return res.status(500).json({ success: false, message: 'failed to fetch user' });
             }
         });
 
