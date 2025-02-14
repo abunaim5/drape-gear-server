@@ -1,5 +1,6 @@
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
+const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const express = require('express');
 const cors = require('cors');
@@ -28,6 +29,19 @@ async function run() {
 
         const productCollection = client.db('drapeGearDB').collection('products');
         const usersCollection = client.db('drapeGearDB').collection('users');
+
+        // JWT related api
+        app.post('/jwt', async (req, res) => {
+            try {
+                const user = req.body;
+                const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+                const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+
+                res.send({accessToken, refreshToken});
+            } catch(err) {
+                console.error(err);
+            }
+        });
 
         // create user related api
         app.post('/register', async (req, res) => {
