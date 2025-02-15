@@ -30,16 +30,24 @@ async function run() {
         const productCollection = client.db('drapeGearDB').collection('products');
         const usersCollection = client.db('drapeGearDB').collection('users');
 
-        // JWT related api
-        app.post('/jwt', async (req, res) => {
+        // login user related api
+        app.post('/login', async (req, res) => {
             try {
-                const user = req.body;
+                const { email, password } = req.body;
+                const user = await usersCollection.findOne({ email });
+
+                if (!user || !(await bcrypt.compare(password, user.password))) {
+                    return res.status(401).json({ message: 'Invalid credentials' })
+                }
+
                 const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
                 const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+                console.log(user, accessToken, refreshToken)
 
-                res.send({accessToken, refreshToken});
-            } catch(err) {
-                console.error(err);
+                res.json({...user, access_token: accessToken, refresh_token: refreshToken})
+            } catch (err) {
+                console.error('Login error:', err);
+                res.status(500).json({message: 'Internal server error'});
             }
         });
 
@@ -71,14 +79,13 @@ async function run() {
             }
         });
 
-        // find user related api
-        app.post('/user', async (req, res) => {
+        // find users related api
+        app.get('/users', async (req, res) => {
             try {
-                const { userInfo } = req.body;
-                const user = await usersCollection.findOne(userInfo);
-                return res.status(200).json({ success: true, user });
+                const users = await usersCollection.find().toArray();
+                return res.status(200).json({ success: true, users });
             } catch (err) {
-                return res.status(500).json({ success: false, message: 'failed to fetch user' });
+                return res.status(500).json({ success: false, message: 'failed to fetch users' });
             }
         });
 
