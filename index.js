@@ -29,6 +29,7 @@ async function run() {
 
         const productCollection = client.db('drapeGearDB').collection('products');
         const usersCollection = client.db('drapeGearDB').collection('users');
+        const cartCollection = client.db('drapeGearDB').collection('cart');
 
         // login user related api
         app.post('/login', async (req, res) => {
@@ -42,12 +43,12 @@ async function run() {
 
                 const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
                 const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
-                console.log(user, accessToken, refreshToken)
 
-                res.json({...user, access_token: accessToken, refresh_token: refreshToken})
+                // res.status(200).json({ success: true, user: { ...user, access_token: accessToken, refresh_token: refreshToken } })
+                res.send({ ...user, access_token: accessToken, refresh_token: refreshToken });
             } catch (err) {
                 console.error('Login error:', err);
-                res.status(500).json({message: 'Internal server error'});
+                res.status(500).json({ message: 'Internal server error' });
             }
         });
 
@@ -132,6 +133,20 @@ async function run() {
                 res.status(200).json({ success: true, products });
             } catch (err) {
                 res.status().json({ success: false, message: 'failed to fetch products' });
+            }
+        });
+
+        // cart related apis
+        app.post('/cart', async (req, res) => {
+            try {
+                const email = req.body;
+                const query = {
+                    email: email
+                }
+                const products = await cartCollection.find(query).toArray();
+                return res.status(200).json({ success: true, products });
+            } catch (err) {
+                return res.status(500).json({ success: false, message: 'failed to fetch cart products' });
             }
         });
 
