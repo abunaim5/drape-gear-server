@@ -139,7 +139,7 @@ async function run() {
         // cart related apis
         app.post('/cart', async (req, res) => {
             try {
-                const email = req.body;
+                const { email } = req.body;
                 const query = {
                     email: email
                 }
@@ -149,6 +149,24 @@ async function run() {
                 return res.status(500).json({ success: false, message: 'failed to fetch cart products' });
             }
         });
+
+        app.post('/addCart', async (req, res) => {
+            try {
+                const { cartProduct } = req.body;
+                console.log(cartProduct)
+                const query = {
+                    productId: cartProduct.productId
+                }
+                const existingProduct = await cartCollection.findOne(query);
+                if (existingProduct) {
+                    return res.status(400).json({ message: 'Product already exists' });
+                }
+                await cartCollection.insertOne(cartProduct);
+                res.status(200).json({ message: 'Successfully add to cart' });
+            } catch (err) {
+                res.status(500).json({ message: 'Something went wrong', err });
+            }
+        })
 
         // find wishlist products
         app.post('/wishlist', async (req, res) => {
