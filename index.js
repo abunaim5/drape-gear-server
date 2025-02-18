@@ -166,7 +166,21 @@ async function run() {
             } catch (err) {
                 res.status(500).json({ message: 'Something went wrong', err });
             }
-        })
+        });
+
+        app.post('/removeFromCart', async (req, res) => {
+            try {
+                const productId = req.body;
+                const query = {
+                    _id: new ObjectId(productId)
+                };
+                await cartCollection.deleteOne(query);
+                res.status(200).json({ message: 'Successfully delete product from cart' });
+            } catch (err) {
+                res.status(500).json({ message: 'Something went wrong', err });
+            }
+
+        });
 
         // find wishlist products
         app.post('/wishlist', async (req, res) => {
