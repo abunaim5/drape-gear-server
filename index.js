@@ -41,7 +41,7 @@ async function run() {
                     return res.status(401).json({ message: 'Invalid credentials' })
                 }
 
-                const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+                const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
                 const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
 
                 // res.status(200).json({ success: true, user: { ...user, access_token: accessToken, refresh_token: refreshToken } })
@@ -153,7 +153,6 @@ async function run() {
         app.post('/addCart', async (req, res) => {
             try {
                 const { cartProduct } = req.body;
-                console.log(cartProduct)
                 const query = {
                     productId: cartProduct.productId
                 }
@@ -162,24 +161,26 @@ async function run() {
                     return res.status(400).json({ message: 'Product already exists' });
                 }
                 await cartCollection.insertOne(cartProduct);
-                res.status(200).json({ message: 'Successfully add to cart' });
+                const updatedProducts = await cartCollection.find({ email: cartProduct.email }).toArray();
+                res.status(200).json({ success: true, updatedProducts });
             } catch (err) {
                 res.status(500).json({ message: 'Something went wrong', err });
             }
         });
 
-        app.post('/removeFromCart', async (req, res) => {
+        app.post('/removeCart', async (req, res) => {
             try {
-                const productId = req.body;
+                const { id, email } = req.body;
+                console.log(id, email)
                 const query = {
-                    _id: new ObjectId(productId)
+                    productId: id
                 };
                 await cartCollection.deleteOne(query);
-                res.status(200).json({ message: 'Successfully delete product from cart' });
+                const updatedProducts = await cartCollection.find({ email: email }).toArray();
+                res.status(200).json({ success: true, updatedProducts });
             } catch (err) {
                 res.status(500).json({ message: 'Something went wrong', err });
             }
-
         });
 
         // find wishlist products
