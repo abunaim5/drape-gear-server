@@ -90,7 +90,7 @@ async function run() {
             }
         });
 
-        // find all product related api
+        // products related api
         app.get('/products', async (req, res) => {
             try {
                 // pagination related queries
@@ -132,7 +132,21 @@ async function run() {
                 const products = await productCollection.find(query, options).toArray();
                 res.status(200).json({ success: true, products });
             } catch (err) {
-                res.status().json({ success: false, message: 'failed to fetch products' });
+                res.status(500).json({ success: false, message: 'Failed to fetch products' });
+            }
+        });
+
+        app.get('/product/:id', async (req, res) => {
+            try {
+                const productId = (req.params.id);
+                const query = {
+                    _id: new ObjectId(productId)
+                }
+                const product = await productCollection.findOne(query);
+                console.log(product)
+                res.status(200).json({ success: true, product });
+            } catch (err) {
+                res.status(500).json({ success: false, message: 'Failed to fetch product' });
             }
         });
 
@@ -218,7 +232,7 @@ async function run() {
                 const searchResult = await productCollection.find(query).toArray();
                 res.status(200).json({ success: true, searchResult });
             } catch (err) {
-                res.status().json({ success: false, message: 'failed to fetch search products' });
+                res.status(500).json({ success: false, message: 'failed to fetch search products' });
             }
         });
 
@@ -243,7 +257,7 @@ async function run() {
                 const count = await productCollection.countDocuments(query);
                 res.status(200).json({ success: true, count });
             } catch (err) {
-                res.status().json({ success: false, message: 'failed to fetch product count' });
+                res.status(500).json({ success: false, message: 'failed to fetch product count' });
             }
         });
 
