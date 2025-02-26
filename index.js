@@ -47,7 +47,6 @@ async function run() {
                 // res.status(200).json({ success: true, user: { ...user, access_token: accessToken, refresh_token: refreshToken } })
                 res.send({ ...user, access_token: accessToken, refresh_token: refreshToken });
             } catch (err) {
-                console.error('Login error:', err);
                 res.status(500).json({ message: 'Internal server error' });
             }
         });
@@ -143,7 +142,6 @@ async function run() {
                     _id: new ObjectId(productId)
                 }
                 const product = await productCollection.findOne(query);
-                console.log(product)
                 res.status(200).json({ success: true, product });
             } catch (err) {
                 res.status(500).json({ success: false, message: 'Failed to fetch product' });
@@ -185,11 +183,30 @@ async function run() {
         app.post('/removeCart', async (req, res) => {
             try {
                 const { id, email } = req.body;
-                console.log(id, email)
                 const query = {
                     productId: id
                 };
                 await cartCollection.deleteOne(query);
+                const updatedProducts = await cartCollection.find({ email: email }).toArray();
+                res.status(200).json({ success: true, updatedProducts });
+            } catch (err) {
+                res.status(500).json({ message: 'Something went wrong', err });
+            }
+        });
+
+        app.patch('/cartQuantity/:id', async (req, res) => {
+            try {
+                const id = req.params.id;
+                const { email, productQuantity } = req.body;
+                const filter = {
+                    productId: id
+                };
+                const updateDoc = {
+                    $set: {
+                        quantity: productQuantity
+                    }
+                }
+                await cartCollection.updateOne(filter, updateDoc);
                 const updatedProducts = await cartCollection.find({ email: email }).toArray();
                 res.status(200).json({ success: true, updatedProducts });
             } catch (err) {
