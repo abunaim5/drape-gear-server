@@ -135,6 +135,15 @@ async function run() {
             }
         });
 
+        app.get('/allProducts', async (req, res) => {
+            try {
+                const products = await productCollection.find().toArray();
+                return res.status(200).json({ success: true, products });
+            } catch (err) {
+                return res.status(500).json({ success: false, message: 'failed to fetch all products' });
+            }
+        });
+
         app.get('/product/:id', async (req, res) => {
             try {
                 const productId = (req.params.id);
