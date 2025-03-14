@@ -157,6 +157,40 @@ async function run() {
             }
         });
 
+        // find product unique categories related api
+        app.get('/categories', async (req, res) => {
+            try {
+                const collection = req.query.collection;
+                let $match = {}
+                if (collection !== 'all') {
+                    $match.collection = collection;
+                }
+                const pipeline = [
+                    {
+                        $match
+                    },
+                    {
+                        $group: {
+                            _id: '$category',
+                            totalProducts: { $sum: 1 }
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: 0,
+                            category: '$_id',
+                            totalProducts: 1
+                        }
+                    }
+                ]
+
+                const categories = await productCollection.aggregate(pipeline).toArray();
+                res.status(200).json({success: true, categories});
+            } catch (error) {
+                return res.status(500).json({ success: false, message: 'failed to fetch categories' });
+            }
+        });
+
         // cart related apis
         app.post('/cart', async (req, res) => {
             try {
