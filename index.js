@@ -165,7 +165,7 @@ async function run() {
                 if (collection !== 'all') {
                     $match.collection = collection;
                 }
-                const pipeline = [
+                const categoryPipeline = [
                     {
                         $match
                     },
@@ -182,10 +182,32 @@ async function run() {
                             totalProducts: 1
                         }
                     }
-                ]
+                ];
 
-                const categories = await productCollection.aggregate(pipeline).toArray();
-                res.status(200).json({success: true, categories});
+                const availabilityPipeline = [
+                    {
+                        $match
+                    },
+                    {
+                        $group: {
+                            _id: '$availability',
+                            totalAvailability: { $sum: 1 }
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: 0,
+                            availability: '$_id',
+                            totalAvailability: 1
+                        }
+                    }
+                ];
+
+                const [categories, availabilityData] = await Promise.all([
+                    productCollection.aggregate(categoryPipeline).toArray(),
+                    productCollection.aggregate(availabilityPipeline).toArray()
+                ]);
+                res.status(200).json({ success: true, categories, availabilityData });
             } catch (error) {
                 return res.status(500).json({ success: false, message: 'failed to fetch categories' });
             }
@@ -319,6 +341,22 @@ async function run() {
             } catch (err) {
                 res.status(500).json({ success: false, message: 'failed to fetch product count' });
             }
+        });
+
+        // payment intent
+        app.post('/create-payment-intent', async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100);
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            });
         });
 
         // Send a ping to confirm a successful connection
