@@ -28,6 +28,7 @@ async function run() {
         await client.connect();
 
         const productCollection = client.db('drapeGearDB').collection('products');
+        const orderCollection = client.db('drapeGearDB').collection('orders');
         const usersCollection = client.db('drapeGearDB').collection('users');
         const cartCollection = client.db('drapeGearDB').collection('cart');
 
@@ -341,6 +342,12 @@ async function run() {
             } catch (err) {
                 res.status(500).json({ success: false, message: 'failed to fetch product count' });
             }
+        });
+
+        app.post('/orderedProduct', async (req, res) => {
+            const orderInfo = req.body;
+            const result = await orderCollection.insertOne(orderInfo);
+            res.send(result);
         });
 
         // payment intent
