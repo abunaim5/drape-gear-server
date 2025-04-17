@@ -1,5 +1,6 @@
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const express = require('express');
@@ -344,26 +345,35 @@ async function run() {
             }
         });
 
-        app.post('/orderedProduct', async (req, res) => {
-            const orderInfo = req.body;
-            const result = await orderCollection.insertOne(orderInfo);
-            res.send(result);
+        // payment system
+        app.post('/orderedProducts', async (req, res) => {
+            try {
+                const orderInfo = req.body;
+                const result = await orderCollection.insertOne(orderInfo);
+                res.status(200).json({ success: true, result });
+            } catch (err) {
+                res.status(500).json({ success: false, message: 'failed to add ordered products info' });
+            }
         });
 
         // payment intent
         app.post('/create-payment-intent', async (req, res) => {
-            const { price } = req.body;
-            const amount = parseInt(price * 100);
+            try {
+                const { price } = req.body;
+                const amount = parseInt(price * 100);
 
-            const paymentIntent = await stripe.paymentIntents.create({
-                amount: amount,
-                currency: 'usd',
-                payment_method_types: ['card']
-            });
-
-            res.send({
-                clientSecret: paymentIntent.client_secret
-            });
+                const paymentIntent = await stripe.paymentIntents.create({
+                    amount: amount,
+                    currency: 'usd',
+                    payment_method_types: ['card']
+                });
+                res.status(200).json({ success: true, clientSecret: paymentIntent.client_secret });
+                // res.send({
+                //     clientSecret: paymentIntent.client_secret
+                // });
+            } catch (err) {
+                res.status(500).json({ success: false, message: 'failed to create payment intent' });
+            }
         });
 
         // Send a ping to confirm a successful connection
