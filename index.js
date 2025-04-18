@@ -233,6 +233,7 @@ async function run() {
             try {
                 const { cartProduct } = req.body;
                 const query = {
+                    email: cartProduct.email,
                     productId: cartProduct.productId
                 }
                 const existingProduct = await cartCollection.findOne(query);
@@ -320,6 +321,28 @@ async function run() {
             }
         });
 
+        // find ordered products api
+        app.post('/orders', async (req, res) => {
+            try {
+                const { email } = req.body;
+                const query = {
+                    email: email
+                }
+                const user = await usersCollection.findOne(query);
+                const isAdmin = user.role === 'admin';
+                if (isAdmin) {
+                    const orders = await orderCollection.find().toArray();
+                    res.status(200).json({ success: true, orders });
+                } else {
+                    const orders = await orderCollection.find({ user_email: email }).toArray();
+                    res.status(200).json({ success: true, orders });
+                }
+            } catch (err) {
+                res.status(500).json({ success: false, message: 'failed to fetch ordered products' });
+            }
+
+        });
+
         // find total product count related api
         app.get('/productCount', async (req, res) => {
             try {
@@ -349,6 +372,14 @@ async function run() {
         app.post('/orderedProducts', async (req, res) => {
             try {
                 const orderInfo = req.body;
+                const userEmail = orderInfo.user_email;
+                const existingUser = await usersCollection.findOne({ userEmail });
+                // if (existingUser) {
+                //     const result = await orderCollection.
+                // } else {
+                //     const result = await orderCollection.insertOne(orderInfo);
+                //     res.status(200).json({ success: true, result });
+                // }
                 const result = await orderCollection.insertOne(orderInfo);
                 res.status(200).json({ success: true, result });
             } catch (err) {
