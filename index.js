@@ -103,6 +103,20 @@ async function run() {
             }
         });
 
+        app.post('/removeProduct', async (req, res) => {
+            try {
+                const { id } = req.body;
+                const query = {
+                    _id: new ObjectId(id)
+                };
+                await productCollection.deleteOne(query);
+                const updatedProducts = await productCollection.find().toArray();
+                res.status(200).json({ success: true, products: updatedProducts });
+            } catch (err) {
+                res.status(500).json({ message: 'Something went wrong', err });
+            }
+        });
+
         app.get('/products', async (req, res) => {
             try {
                 // pagination related queries
