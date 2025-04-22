@@ -92,6 +92,17 @@ async function run() {
         });
 
         // products related api
+        app.post('/addProduct', async (req, res) => {
+            try {
+                const { newProduct } = req.body;
+                await productCollection.insertOne(newProduct);
+                const updatedProducts = await productCollection.find().toArray();
+                res.status(200).json({ success: true, products: updatedProducts });
+            } catch (err) {
+                res.status(500).json({ message: 'Something went wrong', err });
+            }
+        });
+
         app.get('/products', async (req, res) => {
             try {
                 // pagination related queries
@@ -121,10 +132,10 @@ async function run() {
                         options.sort = { createdAt: -1 };
                         break;
                     case 'low':
-                        options.sort.price = 1;
+                        options.sort.sale_price = 1;
                         break;
                     case 'high':
-                        options.sort.price = -1;
+                        options.sort.sale_price = -1;
                         break;
                     default:
                         options.sort = { createdAt: -1 };
@@ -242,7 +253,7 @@ async function run() {
                 }
                 await cartCollection.insertOne(cartProduct);
                 const updatedProducts = await cartCollection.find({ email: cartProduct.email }).toArray();
-                res.status(200).json({ success: true, updatedProducts });
+                res.status(200).json({ success: true, products: updatedProducts });
             } catch (err) {
                 res.status(500).json({ message: 'Something went wrong', err });
             }
@@ -256,7 +267,7 @@ async function run() {
                 };
                 await cartCollection.deleteOne(query);
                 const updatedProducts = await cartCollection.find({ email: email }).toArray();
-                res.status(200).json({ success: true, updatedProducts });
+                res.status(200).json({ success: true, products: updatedProducts });
             } catch (err) {
                 res.status(500).json({ message: 'Something went wrong', err });
             }
@@ -276,7 +287,7 @@ async function run() {
                 }
                 await cartCollection.updateOne(filter, updateDoc);
                 const updatedProducts = await cartCollection.find({ email: email }).toArray();
-                res.status(200).json({ success: true, updatedProducts });
+                res.status(200).json({ success: true, products: updatedProducts });
             } catch (err) {
                 res.status(500).json({ message: 'Something went wrong', err });
             }
