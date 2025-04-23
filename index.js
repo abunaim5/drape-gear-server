@@ -103,6 +103,25 @@ async function run() {
             }
         });
 
+        app.patch('/products/:id', async (req, res) => {
+            try {
+                const id = req.params.id;
+                const updatedData = req.body;
+                const filter = { _id: new ObjectId(id) };
+                const updateDoc = {
+                    $set: {
+                        ...updatedData
+                    }
+                };
+                await productCollection.updateOne(filter, updateDoc);
+                const updatedProducts = await productCollection.find().toArray();
+                res.status(200).json({ success: true, updatedProducts });
+            } catch (err) {
+                res.status(500).json({ message: 'Something went wrong', err });
+            }
+
+        });
+
         app.post('/removeProduct', async (req, res) => {
             try {
                 const { id } = req.body;
@@ -240,6 +259,31 @@ async function run() {
             }
         });
 
+        // find total product count related api
+        app.get('/productCount', async (req, res) => {
+            try {
+                let query = {}
+
+                const searchText = req.query.search;
+                if (searchText) {
+                    query.name = {
+                        $regex: searchText,
+                        $options: 'i'
+                    }
+                };
+
+                const collection = req.query.filter;
+                if (collection && collection !== 'all') {
+                    query.collection = collection;
+                }
+
+                const count = await productCollection.countDocuments(query);
+                res.status(200).json({ success: true, count });
+            } catch (err) {
+                res.status(500).json({ success: false, message: 'failed to fetch product count' });
+            }
+        });
+
         // cart related apis
         app.post('/cart', async (req, res) => {
             try {
@@ -368,43 +412,10 @@ async function run() {
 
         });
 
-        // find total product count related api
-        app.get('/productCount', async (req, res) => {
-            try {
-                let query = {}
-
-                const searchText = req.query.search;
-                if (searchText) {
-                    query.name = {
-                        $regex: searchText,
-                        $options: 'i'
-                    }
-                };
-
-                const collection = req.query.filter;
-                if (collection && collection !== 'all') {
-                    query.collection = collection;
-                }
-
-                const count = await productCollection.countDocuments(query);
-                res.status(200).json({ success: true, count });
-            } catch (err) {
-                res.status(500).json({ success: false, message: 'failed to fetch product count' });
-            }
-        });
-
         // payment system
         app.post('/orderedProducts', async (req, res) => {
             try {
                 const orderInfo = req.body;
-                const userEmail = orderInfo.user_email;
-                const existingUser = await usersCollection.findOne({ userEmail });
-                // if (existingUser) {
-                //     const result = await orderCollection.
-                // } else {
-                //     const result = await orderCollection.insertOne(orderInfo);
-                //     res.status(200).json({ success: true, result });
-                // }
                 const result = await orderCollection.insertOne(orderInfo);
                 res.status(200).json({ success: true, result });
             } catch (err) {
