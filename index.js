@@ -33,6 +33,20 @@ async function run() {
         const usersCollection = client.db('drapeGearDB').collection('users');
         const cartCollection = client.db('drapeGearDB').collection('cart');
 
+        // middlewares
+        const verifyToken = async (req, res, next) => {
+            const authHeader = req.headers.authorization;
+            if (!authHeader) return res.status(401).send({ message: 'Unauthorized access' });
+        
+            const token = authHeader.split(' ')[1];
+            jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+                if (err) return res.status(401).send({ message: 'Invalid or expired token' });
+        
+                req.decoded = decoded;
+                next();
+            });
+        };
+
         // login user related api
         app.post('/login', async (req, res) => {
             try {
@@ -42,11 +56,11 @@ async function run() {
                 if (!user || !(await bcrypt.compare(password, user.password))) {
                     return res.status(401).json({ message: 'Invalid credentials' })
                 }
+                const payload = { _id: user._id, email: user.email, role: user.role };
 
-                const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
-                const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+                const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+                const refreshToken = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
 
-                // res.status(200).json({ success: true, user: { ...user, access_token: accessToken, refresh_token: refreshToken } })
                 res.send({ ...user, access_token: accessToken, refresh_token: refreshToken });
             } catch (err) {
                 res.status(500).json({ message: 'Internal server error' });
@@ -106,7 +120,7 @@ async function run() {
         app.patch('/products/:id', async (req, res) => {
             try {
                 const id = req.params.id;
-                const updatedData = req.body;
+                const { updatedData } = req.body;
                 const filter = { _id: new ObjectId(id) };
                 const updateDoc = {
                     $set: {
@@ -115,7 +129,7 @@ async function run() {
                 };
                 await productCollection.updateOne(filter, updateDoc);
                 const updatedProducts = await productCollection.find().toArray();
-                res.status(200).json({ success: true, updatedProducts });
+                res.status(200).json({ success: true, products: updatedProducts });
             } catch (err) {
                 res.status(500).json({ message: 'Something went wrong', err });
             }
