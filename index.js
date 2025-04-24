@@ -37,11 +37,11 @@ async function run() {
         const verifyToken = async (req, res, next) => {
             const authHeader = req.headers.authorization;
             if (!authHeader) return res.status(401).send({ message: 'Unauthorized access' });
-        
+
             const token = authHeader.split(' ')[1];
             jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
                 if (err) return res.status(401).send({ message: 'Invalid or expired token' });
-        
+
                 req.decoded = decoded;
                 next();
             });
@@ -52,7 +52,17 @@ async function run() {
             const query = { email: email }
             const user = await usersCollection.findOne(query);
             const isAdmin = user?.role === 'admin';
-            if(!isAdmin) return res.status(403).send({message: 'forbidden access'});
+            if (!isAdmin) return res.status(403).send({ message: 'forbidden access' });
+
+            next();
+        };
+
+        const verifyUser = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            const isUser = user?.role === 'user';
+            if (!isUser) return res.status(403).send({ message: 'forbidden access' });
 
             next();
         };
@@ -106,7 +116,7 @@ async function run() {
         });
 
         // find users related api
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
             try {
                 const users = await usersCollection.find().toArray();
                 return res.status(200).json({ success: true, users });
@@ -116,7 +126,7 @@ async function run() {
         });
 
         // products related api
-        app.post('/addProduct', async (req, res) => {
+        app.post('/addProduct', verifyToken, verifyAdmin, async (req, res) => {
             try {
                 const { newProduct } = req.body;
                 await productCollection.insertOne(newProduct);
@@ -127,7 +137,8 @@ async function run() {
             }
         });
 
-        app.patch('/products/:id', async (req, res) => {
+        // update product api
+        app.patch('/products/:id', verifyToken, verifyAdmin, async (req, res) => {
             try {
                 const id = req.params.id;
                 const { updatedData } = req.body;
@@ -146,7 +157,7 @@ async function run() {
 
         });
 
-        app.post('/removeProduct', async (req, res) => {
+        app.post('/removeProduct', verifyToken, verifyAdmin, async (req, res) => {
             try {
                 const { id } = req.body;
                 const query = {
@@ -205,9 +216,15 @@ async function run() {
             }
         });
 
-        app.get('/allProducts', async (req, res) => {
+        app.get('/allProducts', verifyToken, verifyAdmin, async (req, res) => {
             try {
-                const products = await productCollection.find().toArray();
+                const query = {}
+                const options = {
+                    sort: {
+                        createdAt: -1
+                    }
+                }
+                const products = await productCollection.find(query, options).toArray();
                 return res.status(200).json({ success: true, products });
             } catch (err) {
                 return res.status(500).json({ success: false, message: 'failed to fetch all products' });
@@ -309,7 +326,7 @@ async function run() {
         });
 
         // cart related apis
-        app.post('/cart', async (req, res) => {
+        app.post('/cart', verifyToken, verifyUser, async (req, res) => {
             try {
                 const { email } = req.body;
                 const query = {
@@ -322,7 +339,7 @@ async function run() {
             }
         });
 
-        app.post('/addCart', async (req, res) => {
+        app.post('/addCart', verifyToken, verifyUser, async (req, res) => {
             try {
                 const { cartProduct } = req.body;
                 const query = {
@@ -341,7 +358,7 @@ async function run() {
             }
         });
 
-        app.post('/removeCart', async (req, res) => {
+        app.post('/removeCart', verifyToken, verifyUser, async (req, res) => {
             try {
                 const { id, email } = req.body;
                 const query = {
@@ -355,7 +372,7 @@ async function run() {
             }
         });
 
-        app.patch('/cartQuantity/:id', async (req, res) => {
+        app.patch('/cartQuantity/:id', verifyToken, verifyUser, async (req, res) => {
             try {
                 const id = req.params.id;
                 const { email, productQuantity } = req.body;
@@ -415,7 +432,7 @@ async function run() {
         });
 
         // find ordered products api
-        app.post('/orders', async (req, res) => {
+        app.post('/orders', verifyToken, verifyAdmin, verifyUser, async (req, res) => {
             try {
                 const { email } = req.body;
                 const query = {
@@ -437,7 +454,7 @@ async function run() {
         });
 
         // payment system
-        app.post('/orderedProducts', async (req, res) => {
+        app.post('/orderedProducts', verifyToken, verifyUser, async (req, res) => {
             try {
                 const orderInfo = req.body;
                 const result = await orderCollection.insertOne(orderInfo);
@@ -448,7 +465,7 @@ async function run() {
         });
 
         // payment intent
-        app.post('/create-payment-intent', async (req, res) => {
+        app.post('/create-payment-intent', verifyToken, verifyUser, async (req, res) => {
             try {
                 const { price } = req.body;
                 const amount = parseInt(price * 100);
@@ -459,9 +476,6 @@ async function run() {
                     payment_method_types: ['card']
                 });
                 res.status(200).json({ success: true, clientSecret: paymentIntent.client_secret });
-                // res.send({
-                //     clientSecret: paymentIntent.client_secret
-                // });
             } catch (err) {
                 res.status(500).json({ success: false, message: 'failed to create payment intent' });
             }
