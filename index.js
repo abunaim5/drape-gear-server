@@ -26,7 +26,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
 
         const productCollection = client.db('drapeGearDB').collection('products');
         const orderCollection = client.db('drapeGearDB').collection('orders');
@@ -71,6 +71,7 @@ async function run() {
         app.post('/login', async (req, res) => {
             try {
                 const { email, password } = req.body;
+                console.log(email, password);
                 const user = await usersCollection.findOne({ email });
 
                 if (!user || !(await bcrypt.compare(password, user.password))) {
@@ -81,9 +82,9 @@ async function run() {
                 const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
                 const refreshToken = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
 
-                res.send({ ...user, access_token: accessToken, refresh_token: refreshToken });
+                return res.status(200).json({ ...user, access_token: accessToken, refresh_token: refreshToken, sub_id: '' });
             } catch (err) {
-                res.status(500).json({ message: 'Internal server error' });
+                return res.status(500).json({ message: 'Internal server error' });
             }
         });
 
@@ -128,9 +129,14 @@ async function run() {
         // products related api
         app.post('/addProduct', verifyToken, verifyAdmin, async (req, res) => {
             try {
+                const options = {
+                    sort: {
+                        createdAt: -1
+                    }
+                }
                 const { newProduct } = req.body;
                 await productCollection.insertOne(newProduct);
-                const updatedProducts = await productCollection.find().toArray();
+                const updatedProducts = await productCollection.find({}, options).toArray();
                 res.status(200).json({ success: true, products: updatedProducts });
             } catch (err) {
                 res.status(500).json({ message: 'Something went wrong', err });
@@ -148,8 +154,13 @@ async function run() {
                         ...updatedData
                     }
                 };
+                const options = {
+                    sort: {
+                        createdAt: -1
+                    }
+                }
                 await productCollection.updateOne(filter, updateDoc);
-                const updatedProducts = await productCollection.find().toArray();
+                const updatedProducts = await productCollection.find({}, options).toArray();
                 res.status(200).json({ success: true, products: updatedProducts });
             } catch (err) {
                 res.status(500).json({ message: 'Something went wrong', err });
@@ -163,8 +174,13 @@ async function run() {
                 const query = {
                     _id: new ObjectId(id)
                 };
+                const options = {
+                    sort: {
+                        createdAt: -1
+                    }
+                }
                 await productCollection.deleteOne(query);
-                const updatedProducts = await productCollection.find().toArray();
+                const updatedProducts = await productCollection.find({}, options).toArray();
                 res.status(200).json({ success: true, products: updatedProducts });
             } catch (err) {
                 res.status(500).json({ message: 'Something went wrong', err });
@@ -482,8 +498,8 @@ async function run() {
         });
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
