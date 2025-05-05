@@ -203,10 +203,27 @@ async function run() {
                     sort: {}
                 };
 
-                // filter related queries
+                // collection filter related queries
                 const collection = req.query.filter;
                 if (collection !== 'all') {
                     query.collection = collection;
+                };
+
+                // category filter related queries
+                const categories = req.query.category?.split(',') ?? [];
+                if (categories.length > 0) {
+                    query.category = {
+                        $in: categories
+                    }
+                };
+
+                // availability filter related queries
+                const availability = req.query.availability?.split(',') ?? [];
+                const availabilityFilter = availability.map(avail => avail === 'true');
+                if (availability.length > 0) {
+                    query.availability = {
+                        $in: availabilityFilter
+                    }
                 };
 
                 // sort related queries
