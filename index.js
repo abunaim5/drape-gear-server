@@ -465,7 +465,7 @@ async function run() {
         });
 
         // find ordered products api
-        app.post('/orders', verifyToken, verifyAdmin, verifyUser, async (req, res) => {
+        app.post('/orders', verifyToken, async (req, res) => {
             try {
                 const { email } = req.body;
                 const query = {
