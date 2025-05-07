@@ -395,7 +395,7 @@ async function run() {
             try {
                 const { id, email } = req.body;
                 const query = {
-                    productId: id
+                    _id: new ObjectId(id)
                 };
                 await cartCollection.deleteOne(query);
                 const updatedProducts = await cartCollection.find({ email: email }).toArray();
@@ -410,7 +410,7 @@ async function run() {
                 const id = req.params.id;
                 const { email, productQuantity } = req.body;
                 const filter = {
-                    productId: id
+                    _id: new ObjectId(id)
                 };
                 const updateDoc = {
                     $set: {
